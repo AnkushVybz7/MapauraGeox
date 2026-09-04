@@ -60,6 +60,13 @@ class MainActivity : ComponentActivity() {
 @OptIn(com.google.accompanist.permissions.ExperimentalPermissionsApi::class)
 @Composable
 fun NexusMapsApp() {
+    val viewModel: com.example.viewmodel.MapViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val zoomLevel by viewModel.zoomLevel.collectAsState()
+    val centerLat by viewModel.centerLat.collectAsState()
+    val centerLon by viewModel.centerLon.collectAsState()
+    val is3DMode by viewModel.is3DMode.collectAsState()
+    val layersVisible by viewModel.layersVisible.collectAsState()
+
     var isSplitView by remember { mutableStateOf(true) }
     var splitFraction by remember { mutableFloatStateOf(0.5f) }
     
@@ -88,9 +95,9 @@ fun NexusMapsApp() {
                         modifier = Modifier, 
                         satellite = true, 
                         locationEnabled = locationEnabled,
-                        zoomLevel = 15.0,
-                        centerLat = 28.6139,
-                        centerLon = 77.2090
+                        zoomLevel = zoomLevel,
+                        centerLat = centerLat,
+                        centerLon = centerLon
                     )
                 }
                 Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(DividerColor))
@@ -99,9 +106,9 @@ fun NexusMapsApp() {
                         modifier = Modifier, 
                         satellite = false, 
                         locationEnabled = locationEnabled,
-                        zoomLevel = 15.0,
-                        centerLat = 28.6139,
-                        centerLon = 77.2090
+                        zoomLevel = zoomLevel,
+                        centerLat = centerLat,
+                        centerLon = centerLon
                     )
                 }
             }
@@ -132,9 +139,9 @@ fun NexusMapsApp() {
                 modifier = Modifier, 
                 satellite = false, 
                 locationEnabled = locationEnabled,
-                zoomLevel = 15.0,
-                centerLat = 28.6139,
-                centerLon = 77.2090
+                zoomLevel = zoomLevel,
+                centerLat = centerLat,
+                centerLon = centerLon
             )
         }
         
@@ -199,8 +206,14 @@ fun NexusMapsApp() {
             ) {
                 // Left controls
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FloatingMapButton(text = "3D")
-                    FloatingMapButton(icon = Icons.Outlined.Layers)
+                    FloatingMapButton(
+                        text = if (is3DMode) "2D" else "3D",
+                        onClick = { viewModel.toggle3DMode() }
+                    )
+                    FloatingMapButton(
+                        icon = if (layersVisible) Icons.Outlined.Layers else Icons.Outlined.LayersClear,
+                        onClick = { viewModel.toggleLayers() }
+                    )
                     FloatingMapButton(icon = Icons.Outlined.GpsFixed)
                     WeatherWidget()
                 }
@@ -211,18 +224,15 @@ fun NexusMapsApp() {
                     horizontalAlignment = Alignment.End
                 ) {
                     FloatingMapButton(icon = Icons.Outlined.Explore) // Compass
-                    FloatingMapButton(icon = Icons.Outlined.MyLocation) // Location
+                    FloatingMapButton(
+                        icon = Icons.Outlined.MyLocation,
+                        onClick = { 
+                            if (locationEnabled) {
+                                viewModel.setCenter(28.6139, 77.2090)
+                            }
+                        }
+                    )
                     FloatingMapButton(icon = Icons.Outlined.DirectionsWalk) // Street view
-                    Column(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(SurfaceDark.copy(alpha = 0.8f))
-                            .border(1.dp, DividerColor, RoundedCornerShape(12.dp))
-                    ) {
-                        IconButton(onClick = {}) { Icon(Icons.Default.Add, contentDescription = "Zoom In", tint = TextPrimary) }
-                        HorizontalDivider(color = DividerColor)
-                        IconButton(onClick = {}) { Icon(Icons.Default.Remove, contentDescription = "Zoom Out", tint = TextPrimary) }
-                    }
                 }
             }
             
@@ -366,14 +376,14 @@ fun MapModeChip(title: String, subtitle: String, color: Color, icon: ImageVector
 }
 
 @Composable
-fun FloatingMapButton(icon: ImageVector? = null, text: String? = null) {
+fun FloatingMapButton(icon: ImageVector? = null, text: String? = null, onClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .size(44.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(SurfaceDark.copy(alpha = 0.8f))
             .border(1.dp, DividerColor, RoundedCornerShape(12.dp))
-            .clickable { },
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         if (icon != null) {

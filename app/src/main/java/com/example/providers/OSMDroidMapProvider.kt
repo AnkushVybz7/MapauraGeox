@@ -70,7 +70,13 @@ class OSMDroidMapProvider : MapProvider {
                     mapView.overlays.removeAll { it is MyLocationNewOverlay }
                 }
                 
-                // Keep center updated only if needed (for simplicity, we let user control)
+                // Update center and zoom if they changed programmatically
+                if (mapView.zoomLevelDouble != zoomLevel) {
+                    mapView.controller.setZoom(zoomLevel)
+                }
+                if (mapView.mapCenter.latitude != centerLat || mapView.mapCenter.longitude != centerLon) {
+                    mapView.controller.animateTo(GeoPoint(centerLat, centerLon))
+                }
             }
         )
     }
